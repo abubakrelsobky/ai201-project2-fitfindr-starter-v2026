@@ -23,6 +23,7 @@ the description has to say what is *in* the list.
 import config  # noqa: F401 — you'll use this in search_listings
 from generate import generate
 from utils.data_loader import load_listings
+import re
 
 
 # ── Tool 1: search_listings ───────────────────────────────────────────────────
@@ -78,8 +79,38 @@ def search_listings(
     Test it from a terminal before you move on:
         python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
     """
-    # TODO: replace this with your implementation
-    return []
+    listings = load_listings()
+    scored_results = []
+
+    keywords = set(re.findall(r"[a-z0-9]+", description.lower()))
+
+    for listing in listings:
+        if size is not None and not size_matches(listing["size"], size):
+            continue
+
+        if max_price is not None and listing["price"] > max_price:
+            continue
+
+        searchable_text = " ".join(
+            [
+                listing["title"],
+                listing["description"],
+                " ".join(listing["style_tags"]),
+            ]
+        ).lower()
+
+        listing_words = set(re.findall(r"[a-z0-9]+", searchable_text))
+        score = len(keywords & listing_words)
+
+        if score > 0:
+            scored_results.append((score, listing))
+
+    scored_results.sort(key=lambda result: result[0], reverse=True)
+
+    return [
+        listing
+        for score, listing in scored_results[:config.SEARCH_RESULT_LIMIT]
+    ]
 
 
 # ── Tool 2: suggest_outfit ────────────────────────────────────────────────────
@@ -112,8 +143,51 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
     """
-    # TODO: replace this with your implementation
-    return ""
+    items = wardrobe.get("items", [])
+
+    item_summary = (
+        f"Name: {new_item.get('title', 'Unknown item')}\n"
+        f"Category: {new_item.get('category', 'Unknown')}\n"
+        f"Colors: {', '.join(new_item.get('colors', []))}\n"
+        f"Style tags: {', '.join(new_item.get('style_tags', []))}"
+    )
+
+    if not items:
+        prompt = f"""
+The user is considering this clothing item:
+
+{item_summary}
+
+The user has no wardrobe items yet. Give general styling advice for this item.
+Suggest colors, clothing categories, and shoe or accessory types that could work.
+Do not assume the user already owns anything. Keep the response concise.
+"""
+    else:
+        wardrobe_text = "\n".join(
+            f"- {item.get('name', 'Unnamed item')} "
+            f"({item.get('category', 'unknown category')}; "
+            f"colors: {', '.join(item.get('colors', []))}; "
+            f"styles: {', '.join(item.get('style_tags', []))})"
+            for item in items
+        )
+
+        prompt = f"""
+You are a practical personal stylist.
+
+The user is considering this new item:
+
+{item_summary}
+
+Their existing wardrobe is:
+
+{wardrobe_text}
+
+Suggest one or two complete outfits using the new item and pieces from
+their existing wardrobe. Name the exact wardrobe pieces you use and briefly
+explain why the combinations work. Keep the response concise.
+"""
+
+    return generate(prompt)
 
 
 # ── Tool 3: create_fit_card ───────────────────────────────────────────────────
@@ -152,5 +226,30 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
     """
-    # TODO: replace this with your implementation
-    return ""
+    if not outfit.strip():
+        return "I cannot create a fit card because no outfit suggestion was provided."
+
+    prompt = f"""
+Write a short social-media-style caption about this thrift find.
+
+Item: {new_item["title"]}
+Price: ${new_item["price"]}
+Platform: {new_item["platform"]}
+Category: {new_item["category"]}
+Colors: {", ".join(new_item["colors"])}
+
+Suggested outfit:
+{outfit}
+
+Write 2–4 sentences. Mention the item, price, and platform once each.
+Describe the overall style or vibe. Make it sound natural and specific.
+"""
+
+    return generate(prompt)
+
+
+def size_matches(listing_size, requested_size):
+    listing_sizes = re.findall(r"[A-Z]+\d*", listing_size.upper())
+    requested_sizes = re.findall(r"[A-Z]+\d*", requested_size.upper())
+
+    return any(size in listing_sizes for size in requested_sizes)
