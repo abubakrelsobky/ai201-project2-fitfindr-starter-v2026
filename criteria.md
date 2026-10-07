@@ -4,13 +4,13 @@ Five criteria that say what "working" means for this agent, written in unit 3
 **before** any results existed.
 
 An acceptance criterion names a target: a number, a count, a rate, or something
-a person could plainly observe. *"The agent handles errors"* is an opinion.
-*"When search returns nothing, the agent stops before calling the second tool,
-in 5 of 5 tries"* is a criterion.
+a person could plainly observe. _"The agent handles errors"_ is an opinion.
+_"When search returns nothing, the agent stops before calling the second tool,
+in 5 of 5 tries"_ is a criterion.
 
 Under each one, write a sentence or two on **why that target** and not a
 stricter one. A reason that says something about your tools, your loop, or the
-data earns credit; *"80% seemed reasonable"* does not.
+data earns credit; _"80% seemed reasonable"_ does not.
 
 > Missing your own targets next unit costs you nothing. Setting a target so
 > easy you can't miss it does.
@@ -25,6 +25,7 @@ Given a query that matches at least one listing, the agent completes all three
 tool calls and returns a fit card — in at least 4 of 5 tries.
 
 **Why this target:**
+
 <!-- Why 4 of 5 and not 5 of 5? Something about your search, probably —
      "my search is a plain keyword match and some phrasings will miss" is a
      real answer. -->
@@ -37,6 +38,7 @@ Given a query that matches no listings, the agent stops before calling
 `suggest_outfit` and returns a message naming what to change — 5 of 5 tries.
 
 **Why this target:**
+
 <!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
      about this path? -->
 
@@ -54,11 +56,11 @@ Given a query that matches no listings, the agent stops before calling
      compares session["selected_item"] against what actually reached
      suggest_outfit is the shape you're after. -->
 
-
+The highest scoring item (first item on the list) returned by search_listings must have the same id as the new_item which gets passed to the suggest_outfit tool on 5 out of 5 tries.
 
 **Why this target:**
 
-
+Because it ensures smooth flow of information between tool calls. Given instructions, there should be no ambiguity on item selected. Therefore, I selected a target of 5 out of 5 tries.
 
 ---
 
@@ -75,11 +77,11 @@ Given a query that matches no listings, the agent stops before calling
      sentence? A card longer than a caption anyone would post? Any of those can
      be turned into a number. -->
 
-
+     The title of the item mentioned in the caption returned by create_fit_card must match the title associated with the id of the new_item that was passed to suggest_outfit on 5 of 5 tries.
 
 **Why this target:**
 
-
+The create_fit_card description in tools.py syas the caption 'should mention the item.' A clear method of testing this is ensuring title is mentioned. I selected on a targte of 5 of 5 tries because the title field is a very precise measurement and should not be missed on any try.
 
 ---
 
@@ -92,11 +94,10 @@ Given a query that matches no listings, the agent stops before calling
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
 
-
+The caption returned by create_fit_card must contain at least two complete sentence in 5 out of 5 tries.
 
 **Why this target:**
-
-
+Two complete sentences make the fit card readable and usable as a caption. The function is expected to return a two-to-four-sentence caption, so at least two complete sentences is a reasonable minimum quality check. I selected 5 out of 5 because every successful fit-card response should be understandable, even if the wording varies between model calls.
 
 ---
 
