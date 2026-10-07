@@ -40,6 +40,7 @@
 ## What This Does
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
+The user asks for outfits at a thrift shop. The system returns listings that match the user's query. The system also suggests outfits that match the user's wardrobe, if any. Finally, it produces a caption that matches the suggested outfit.
 
 ---
 
@@ -175,15 +176,15 @@ I cannot create a fit card because no outfit suggestion was provided.
 
 **Moment 1**
 
-- _What I asked for:_
-- _What came back:_
-- _What I changed:_
+- _What I asked for:_ I asked it to build search_listings by pasting the lab instructions.
+- _What came back:_ The full logic, including all required criteria.
+- _What I changed:_ Nothing! I took the time to understand the code.
 
 **Moment 2**
 
-- _What I asked for:_
-- _What came back:_
-- _What I changed:_
+- _What I asked for:_ To fill in run_agent() by pasting the lab instructions.
+- _What came back:_ The full code for run_agent().
+- _What I changed:_ Nothing! I took the time to understand the code.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
