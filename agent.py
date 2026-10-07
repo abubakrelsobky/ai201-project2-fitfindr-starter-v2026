@@ -147,24 +147,20 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         "max_price": max_price,
         }
 
-        parsed = session["parsed"]
+        session["search_results"] = search_listings(
+            session["parsed"]["description"],
+            session["parsed"]["size"],
+            session["parsed"]["max_price"],
+        )
 
-        results = search_listings(
-        parsed["description"],
-        parsed["size"],
-        parsed["max_price"],
-    )
-
-        session["search_results"] = results
-
-        if not results:
+        if not session["search_results"]:
             session["error"] = (
                 "No matching listings were found. Try changing the description, "
                 "size, or maximum price."
             )
             return session
 
-        session["selected_item"] = results[0]
+        session["selected_item"] = session["search_results"][0]
 
         session["outfit_suggestion"] = suggest_outfit(
             session["selected_item"],
