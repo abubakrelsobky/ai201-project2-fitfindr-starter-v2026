@@ -13,10 +13,13 @@ Build and test your three tools in `tools.py` first. Then come here.
     python agent.py          runs both example paths below
 """
 
+#from flask import session
+
 import config
 import trace
 from tools import search_listings, suggest_outfit, create_fit_card
 from generate import ModelUnavailable
+import re
 
 
 # ── session state ─────────────────────────────────────────────────────────────
@@ -106,10 +109,74 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         than a stack trace. The import is already at the top of this file.
     """
     session = new_session(query, wardrobe)
+    count = 0
+    while True:
+        count += 1
+        trace.check_iterations(count)
+        query_text = session["query"]
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
-    return session
+        size_match = re.search(
+            r"\bsize\s+([A-Za-z0-9/]+)",
+            query_text,
+            re.IGNORECASE,
+        )
+
+        price_match = re.search(
+            r"\b(?:under|below|less than)\s*\$?(\d+(?:\.\d+)?)",
+            query_text,
+            re.IGNORECASE,
+        )
+
+        size = size_match.group(1).upper() if size_match else None
+        max_price = float(price_match.group(1)) if price_match else None
+
+        description = query_text
+
+        if size_match:
+            description = description.replace(size_match.group(0), "")
+
+        if price_match:
+            description = description.replace(price_match.group(0), "")
+
+        description = description.replace(",", " ").strip()
+        description = re.sub(r"\s+", " ", description)
+
+        session["parsed"] = {
+        "description": description,
+        "size": size,
+        "max_price": max_price,
+        }
+
+        parsed = session["parsed"]
+
+        results = search_listings(
+        parsed["description"],
+        parsed["size"],
+        parsed["max_price"],
+    )
+
+        session["search_results"] = results
+
+        if not results:
+            session["error"] = (
+                "No matching listings were found. Try changing the description, "
+                "size, or maximum price."
+            )
+            return session
+
+        session["selected_item"] = results[0]
+
+        session["outfit_suggestion"] = suggest_outfit(
+            session["selected_item"],
+            session["wardrobe"],
+        )
+
+        session["fit_card"] = create_fit_card(
+            session["outfit_suggestion"],
+            session["selected_item"],
+        )
+
+        return session
 
 
 # ── running it directly ───────────────────────────────────────────────────────
@@ -127,21 +194,53 @@ def _show(session: dict) -> None:
 
 
 if __name__ == "__main__":
+    from pprint import pprint
     from utils.data_loader import get_example_wardrobe
 
+    # Spy: record exactly what suggest_outfit receives
+    received = {}
+    _original_suggest_outfit = suggest_outfit
+
+    def _spy_suggest_outfit(item, wardrobe):
+        received["item"] = item
+        return _original_suggest_outfit(item, wardrobe)
+
+    suggest_outfit = _spy_suggest_outfit   # run_agent will now call the spy
+
     print("=== A query the data can match ===")
-    _show(run_agent(
+    happy = run_agent(
         query="looking for a vintage graphic tee under $30",
         wardrobe=get_example_wardrobe(),
-    ))
+    )
+    _show(happy)
+
+    print("\n--- full session ---")
+    pprint(happy)
+
+    print("\n--- check ---")
+    print("item that reached suggest_outfit:", received.get("item"))
+    print("same object:", received.get("item") is happy["selected_item"])
 
     print("\n=== A query it can't ===")
-    _show(run_agent(
+    received.clear()   # reset the spy so we can confirm suggest_outfit is never called
+    sad = run_agent(
         query="designer ballgown size XXS under $5",
         wardrobe=get_example_wardrobe(),
-    ))
+    )
+    _show(sad)
+
+    print("\n--- full session ---")
+    pprint(sad)
+
+    print("\n--- check ---")
+    print("fit_card is None:          ", sad["fit_card"] is None)
+    print("outfit_suggestion is None: ", sad["outfit_suggestion"] is None)
+    print("suggest_outfit was called: ", "item" in received)
+    print("error message:             ", sad["error"])
+
 
     print(
         "\nThe second one should stop before the fit card. If both paths look "
         "the same,\nthe branch isn't doing anything yet."
     )
+
