@@ -40,6 +40,7 @@
 ## What This Does
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
+
 The user asks for outfits at a thrift shop. The system returns listings that match the user's query. The system also suggests outfits that match the user's wardrobe, if any. Finally, it produces a caption that matches the suggested outfit.
 
 ---
@@ -258,21 +259,86 @@ that produced it:
      `python app.py ask '...' --trace` once you've added the trace.step()
      calls in Milestone 2.
 
-     Worth pasting BOTH the happy path and the empty-search path. The empty
-     one should be visibly shorter, because it stops. If your two traces are
-     the same length, your branch isn't working — and this is the fastest way
-     anyone will ever find that out. -->
+     Worth pasting BOTH the happy path and the empty-search path. The empty one should be visibly shorter, because it stops. If your two traces are the same length, your branch isn't working — and this is the fastest way anyone will ever find that out. -->
 
 **Happy path**
 
 ```
+python app.py ask 'vintage graphic tee under $30' --trace
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey … +7 more
+[2] suggest_outfit
+      in:  dict with keys: new_item, wardrobe
+      out: **Outfit 1: Y2K Streetwear Contrast** * **Pieces used:** Baggy straight-leg dark wash jeans, black cropped zip…
+[3] create_fit_card
+      in:  dict with keys: outfit, new_item
+      out: Fluttering straight out of 2004, this white Y2K baby tee featuring a pastel pink and purple butterfly print is…
+
+  Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+  Outfit:   **Outfit 1: Y2K Streetwear Contrast**
+* **Pieces used:** Baggy straight-leg dark wash jeans, black cropped zip hoodie, chunky white sneakers, black crossbody bag.
+* **Why it works:** The fitted, feminine baby tee contrasts perfectly with the heavy, masculine proportions of the baggy dark wash jeans. Layering the black cropped zip hoodie on top keeps you warm while framing the graphic, and chunky white sneakers tie the retro Y2K aesthetic together.
+
+**Outfit 2: Casual Earth-Tone Mix**
+* **Pieces used:** Wide-leg khaki trousers, brown leather belt, chunky white sneakers, black crossbody bag.
+* **Why it works:** Pairing the pastel pink and purple butterfly tee with khaki trousers bridges the gap between Y2K and cottagecore/earthy styles. Adding the brown leather belt pulls the tan tones together, while white sneakers keep the overall look fresh, effortless, and grounded.
+
+  Fit card: Fluttering straight out of 2004, this white Y2K baby tee featuring a pastel pink and purple butterfly print is the ultimate nostalgic staple. Snagged this beauty for just $18.0 over on Depop, and it’s giving major effortless mall-rat energy. Style it with baggy denim for instant street cred or wide-leg khakis for an earthy twist! 🦋✨
+
+0 model calls this session, 2 served from cache
+```
+
+**Empty Search**
+
+```
+python app.py ask 'designer ballgown size XXS under $5' --trace
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: [] (empty)
+
+  No matching listings were found. Try changing the description, size, or maximum price.
+
+0 model calls this session
+```
+
+**Empty wardrobe**
+
+```
+$ python app.py ask 'vintage graphic tee under $30' --empty-wardrobe
+(running with an empty wardrobe)
+
+Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+  Outfit:   Here is how to style the **Y2K Baby Tee — Butterfly Print**:
+
+*   **Complementary Colors:** Stick to pastels like baby blue, mint green, and lilac to match the pink and purple tones, or use black and denim to ground the bright print.
+*   **Clothing Categories:** Pair the fitted baby tee with contrasting silhouettes like baggy cargo pants, low-rise denim, pleated mini skirts, or flared leggings.
+*   **Footwear:** Platform sneakers, chunky loafers, or strappy sandals.
+*   **Accessories:** Butterfly hair clips, baguette shoulder bags, chunky resin rings, and beaded necklaces.
+
+  Fit card: Obsessed with this Y2K baby tee with the cutest butterfly print! ✨ Grab it on Depop for just $18.00 to instantly channel total early 2000s pop-star energy. Style it with low-rise denim and platform sneakers for the ultimate nostalgic fit.
+
+2 model calls this session, 319 prompt + 191 output tokens
 
 ```
 
 **Empty search**
 
 ```
+$ python app.py ask 'designer ballgown size XXS under $5' --trace
 
+No matching listings were found. Try changing the description, size, or maximum price.
+```
+
+**Model Unavailable**
+
+```
+$ python app.py ask 'black jacket under $50'
+1 model calls this session
+
+ModelUnavailable: The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.
 ```
 
 **On the MCP move:** <!-- what changed in your code, and whether anything

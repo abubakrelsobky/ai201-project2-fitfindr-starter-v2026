@@ -154,6 +154,12 @@ def run_agent(query: str, wardrobe: dict) -> dict:
             "max_price": session["parsed"]["max_price"],
         })
 
+        trace.step(
+            "search_listings (via MCP)",
+            inputs=session["parsed"],
+            returned=session["search_results"],
+        )
+
         if not session["search_results"]:
             session["error"] = (
                 "No matching listings were found. Try changing the description, "
@@ -168,9 +174,27 @@ def run_agent(query: str, wardrobe: dict) -> dict:
             session["wardrobe"],
         )
 
+        trace.step(
+            "suggest_outfit",
+            inputs={
+                "new_item": session["selected_item"],
+                "wardrobe": session["wardrobe"],
+            },
+            returned=session["outfit_suggestion"],
+        )
+
         session["fit_card"] = create_fit_card(
             session["outfit_suggestion"],
             session["selected_item"],
+        )
+
+        trace.step(
+            "create_fit_card",
+            inputs={
+                "outfit": session["outfit_suggestion"],
+                "new_item": session["selected_item"],
+            },
+            returned=session["fit_card"],
         )
 
         return session
