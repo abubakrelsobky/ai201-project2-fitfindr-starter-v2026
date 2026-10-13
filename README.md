@@ -205,16 +205,223 @@ I cannot create a fit card because no outfit suggestion was provided.
      `python run_eval.py --label before` runs everything and writes the table
      into results/. Paste it here and fill in the verdicts. -->
 
-| Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
-| --------- | ------ | ----- | ----- | ----- | ----- | ----- | ------- |
-| 1.        |        |       |       |       |       |       |         |
-| 2.        |        |       |       |       |       |       |         |
-| 3.        |        |       |       |       |       |       |         |
-| 4.        |        |       |       |       |       |       |         |
-| 5.        |        |       |       |       |       |       |         |
+| Criterion                                            | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5        | Verdict      |
+| ---------------------------------------------------- | ------ | ----- | ----- | ----- | ----- | ------------ | ------------ |
+| 1. matching query completes                          | FAIL   | FAIL  | PASS  | PASS  | PASS  | PASS         | MISSED (3/5) |
+| 2. impossible query stops early                      | PASS   | PASS  | PASS  | PASS  | PASS  | MET (5/5)    |
+| empty wardrobe _(diagnostic — not one of your five)_ | FAIL   | FAIL  | FAIL  | FAIL  | FAIL  | MISSED (1/5) |
+| 3. right item passed to suggest_outfit               | FAIL   | PASS  | PASS  | PASS  | PASS  | MISSED (4/5) |
+| 4. fit card names selected item                      | FAIL   | PASS  | PASS  | PASS  | FAIL  | MISSED (3/5) |
+| 5. fit card has complete sentences                   | PASS   | FAIL  | PASS  | PASS  | PASS  | MISSED (4/5) |
 
 **Real output from one try**, pasted as text, naming the file and function
 that produced it:
+
+```
+**Criterion 1**
+```
+
+stopped early: no
+
+- selected_item: Y2K Baby Tee — Butterfly Print ($18.0, depop)
+- search_results: 10
+
+Outfit suggestion:
+
+```
+Here are two complete outfit ideas using your new Y2K baby tee:
+
+**Outfit 1: High-Contrast Streetwear**
+*   **Top:** Y2K Baby Tee (New item)
+*   **Bottoms:** Baggy straight-leg jeans, dark wash
+*   **Footwear:** Chunky white sneakers
+*   **Outerwear:** Black cropped zip hoodie
+*   **Accessories:** Black crossbody bag
+*   **Why it works:** This creates the classic Y2K proportion play—the ultra-fitted baby tee balances out the voluminous baggy jeans. Layering the black cropped hoodie over top adds texture and edge, while the chunky white sneakers tie the whole streetwear aesthetic together.
+
+**Outfit 2: Casual Retro-Earth**
+*   **Top:** Y2K Baby Tee (New item)
+*   **Bottoms:** Wide-leg khaki trousers
+*   **Footwear:** Black combat boots
+*   **Accessories:** Brown leather belt, Black crossbody bag
+*   **Why it works:** The pink and purple butterfly print pops against the neutral khaki trousers for an effortless, vintage-casual look. Tucking in the fitted tee and cinching it with the belt defines your waist against the wide-leg cut, and the black combat boots ground the softer cottagecore/Y2K elements with a touch of grunge.
+```
+
+Fit card:
+
+```
+🦋 Oh, to be a Y2K pop princess in this pink and purple butterfly baby tee! Score this ultimate vintage throwback on my Depop for just $18. It’s giving total early 2000s nostalgia, perfect for styling with baggy denim or retro trousers. ✨
+```
+
+Trace:
+
+```
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey … +7 more
+[2] suggest_outfit
+      in:  dict with keys: new_item, wardrobe
+      out: Here are two complete outfit ideas using your new Y2K baby tee:  **Outfit 1: High-Contrast Streetwear** *   **…
+[3] create_fit_card
+      in:  dict with keys: outfit, new_item
+      out: 🦋 Oh, to be a Y2K pop princess in this pink and purple butterfly baby tee! Score this ultimate vintage throwba…
+```
+
+```
+**Criterion 2**
+- stopped early: yes — No matching listings were found. Try changing the description, size, or maximum price.
+- selected_item: (none)
+- search_results: 0
+
+Trace:
+
+```
+
+[1] search_listings (via MCP)
+in: dict with keys: description, size, max_price
+out: [] (empty)
+
+```
+
+```
+
+**Criterion 3**
+
+- stopped early: no
+- selected_item: Mesh Long-Sleeve Top — Black ($15.0, depop)
+- search_results: 9
+
+Outfit suggestion:
+
+```
+Here are two complete outfits featuring the Mesh Long-Sleeve Top:
+
+### Outfit 1: 90s Grunge Streetwear
+* **Key pieces used:** Mesh Long-Sleeve Top, White ribbed tank top, Baggy straight-leg jeans (dark wash), Black combat boots, Black crossbody bag.
+* **Why it works:** Layering the sheer mesh top over the fitted white ribbed tank creates a high-contrast, textured look that leans into the top's Y2K/grunge roots. Pairing it with relaxed, dark wash baggy jeans and heavy combat boots balances the fitted top with volume and edge.
+
+### Outfit 2: Contrast & Textures (Edgy Minimal)
+* **Key pieces used:** Mesh Long-Sleeve Top, Black cropped zip hoodie, Wide-leg khaki trousers, Chunky white sneakers, Black crossbody bag.
+* **Why it works:** This look uses the mesh top as a sleek, textured base layered underneath the black cropped zip hoodie for a cool streetwear contrast. Grounding the dark, fitted top half with relaxed khaki trousers and chunky white sneakers keeps the outfit modern, breathable, and wearable.
+```
+
+Fit card:
+
+```
+The ultimate 90s grunge layering piece just landed in the shop! Grab this versatile black mesh long-sleeve top on my Depop for just $15. It’s giving major Y2K edgy minimal vibes—throw it on over a white tank or under a zip hoodie and you're good to go. 🖤✨
+```
+
+Trace:
+
+```
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 9 items: Mesh Long-Sleeve Top — Black, Y2K Baby Tee — Butterfly Print, Oversized Flannel Shirt — Plaid Red/Black … +6 more
+[2] suggest_outfit
+      in:  dict with keys: new_item, wardrobe
+      out: Here are two complete outfits featuring the Mesh Long-Sleeve Top:  ### Outfit 1: 90s Grunge Streetwear * **Key…
+[3] create_fit_card
+      in:  dict with keys: outfit, new_item
+      out: The ultimate 90s grunge layering piece just landed in the shop! Grab this versatile black mesh long-sleeve top…
+```
+
+```
+**Criterion 4**
+ stopped early: no
+- selected_item: Y2K Baby Tee — Butterfly Print ($18.0, depop)
+- search_results: 10
+
+Outfit suggestion:
+
+```
+
+**Outfit 1: Y2K Streetwear Contrast**
+
+- **Pieces used:** Baggy dark wash straight-leg jeans, black cropped zip hoodie, chunky white sneakers, black crossbody bag.
+- **Why it works:** The fitted, graphic nature of the baby tee balances the oversized proportions of the baggy jeans and zip hoodie. It leans fully into the Y2K aesthetic while keeping the color palette grounded with black, white, and dark blue.
+
+**Outfit 2: Casual Vintage Mix**
+
+- **Pieces used:** Wide-leg khaki trousers, vintage black denim jacket, chunky white sneakers, brown leather belt.
+- **Why it works:** The butterfly print adds a playful, nostalgic pop to the neutral earth tones of the khakis and brown belt. Layering the vintage black denim jacket on top ties the look together with a cool, effortless edge.
+
+```
+
+Fit card:
+
+```
+
+Channel your inner early 2000s pop star with this adorable white, pink, and purple butterfly print baby tee. Priced at just $18.00, it's the ultimate nostalgia piece for mastering that effortless Y2K streetwear vibe. Grab it now exclusively on Depop before it’s gone! 🦋✨
+
+```
+
+Trace:
+
+```
+
+[1] search_listings (via MCP)
+in: dict with keys: description, size, max_price
+out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey … +7 more
+[2] suggest_outfit
+in: dict with keys: new_item, wardrobe
+out: **Outfit 1: Y2K Streetwear Contrast** \* **Pieces used:** Baggy dark wash straight-leg jeans, black cropped zip…
+[3] create_fit_card
+in: dict with keys: outfit, new_item
+out: Channel your inner early 2000s pop star with this adorable white, pink, and purple butterfly print baby tee. P…
+
+```
+**Criterion 5**
+
+```
+
+stopped early: no
+
+- selected_item: Y2K Baby Tee — Butterfly Print ($18.0, depop)
+- search_results: 10
+
+Outfit suggestion:
+
+```
+Here are two complete outfit ideas using your new Y2K Butterfly Baby Tee and pieces from your existing wardrobe:
+
+### Outfit 1: Streetwear Contrast
+* **Top:** Y2K Baby Tee — Butterfly Print (New)
+* **Bottoms:** Baggy straight-leg jeans (dark wash)
+* **Outerwear:** Black cropped zip hoodie
+* **Shoes:** Chunky white sneakers
+* **Accessories:** Black crossbody bag
+
+**Why it works:** This outfit plays on the classic Y2K proportion contrast: a tight, cropped baby tee paired with ultra-baggy bottoms. Layering the black cropped zip hoodie on top keeps the silhouette balanced while leaning into your streetwear aesthetic. The chunky white sneakers tie the white in the graphic tee together for a cohesive look.
+
+### Outfit 2: Casual Vintage Mix
+* **Top:** Y2K Baby Tee — Butterfly Print (New)
+* **Bottoms:** Wide-leg khaki trousers
+* **Outerwear:** Vintage black denim jacket
+* **Shoes:** Black combat boots
+* **Accessories:** Brown leather belt, Black crossbody bag
+
+**Why it works:** This combination bridges the gap between Y2K and minimal earth tones. Tucking the fitted baby tee into the wide-leg khakis and cinching it with the brown leather belt defines your waist. Throwing on the vintage black denim jacket and combat boots adds an edgy, grounded contrast to the playful, pastel butterfly print.
+```
+
+Fit card:
+
+```
+Butterflies are officially back, and this Y2K butterfly baby tee is the ultimate nostalgic thrift score. Grab it on Depop for just $18.00 to instantly channel that effortless early-2000s streetwear vibe. Pair it with baggy denim or wide-leg trousers for the ultimate fitted-meets-baggy proportion play! ✨🦋
+```
+
+Trace:
+
+```
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey … +7 more
+[2] suggest_outfit
+      in:  dict with keys: new_item, wardrobe
+      out: Here are two complete outfit ideas using your new Y2K Butterfly Baby Tee and pieces from your existing wardrob…
+[3] create_fit_card
+      in:  dict with keys: outfit, new_item
+      out: Butterflies are officially back, and this Y2K butterfly baby tee is the ultimate nostalgic thrift score. Grab …
+```
 
 ```
 
@@ -240,15 +447,48 @@ that produced it:
      Look for a pattern. Three misses on the same tool is one problem, not
      three. -->
 
-| #   | Criterion | Target | Verdict | How I decided |
-| --- | --------- | ------ | ------- | ------------- |
-| 1   |           |        |         |               |
-| 2   |           |        |         |               |
-| 3   |           |        |         |               |
-| 4   |           |        |         |               |
-| 5   |           |        |         |               |
+| #   | Criterion                                            | Target | Verdict      | How I decided                                                                                                                          |
+| --- | ---------------------------------------------------- | ------ | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | A matching query completes all three tools           | 4/5    | MISSED (3/5) | Tries 1 and 2 crashed with a temporary model-service 503; tries 3, 4, and 5 completed with fit cards.                                  |
+| 2   | An impossible query stops before the second tool     | 5/5    | MET (5/5)    | All five tries returned an empty result and stopped before `suggest_outfit`.                                                           |
+| 3   | The selected item reaches `suggest_outfit` unchanged | 5/5    | MISSED (4/5) | Four tries completed and showed the selected item flowing to the next tool; one try crashed because the model service was unavailable. |
+| 4   | The fit card names the selected item                 | 5/5    | MISSED (3/5) | Three completed fit cards named the selected item; two tries crashed with a temporary model-service 503.                               |
+| 5   | The fit card has at least two complete sentences     | 5/5    | MISSED (4/5) | Four completed fit cards contained at least two sentences; one try crashed before producing a card.                                    |
 
 **Diagnoses**
+
+**Criterion 1 — matching query completes: MISSED (3/5).** The failure occurred
+in the model-backed tools, not in the search or branching logic. Tries 1 and 2
+received a `503 UNAVAILABLE` response from the model service, so the agent
+crashed before it could finish all three tool calls. The other three tries
+completed and returned fit cards. The immediate improvement is to retry the
+evaluation when the model service is available and keep the original run as
+evidence of the external availability failure.
+
+**Criterion 2 — impossible query stops early: MET (5/5).** The loop branch
+worked correctly. Each search returned an empty list, the session received a
+message explaining that the description, size, or maximum price could change,
+and `suggest_outfit` was not called. This was a successful branch behavior,
+not a tool or model failure.
+
+**Criterion 3 — selected item reaches `suggest_outfit`: MISSED (4/5).** The
+four completed tries passed the selected listing into the next tool, but one
+try failed at the model-service boundary with a `503 UNAVAILABLE` error before
+the complete workflow could be observed. The session and loop were working in
+the completed tries; the miss was caused by model availability rather than by
+changing the selected item.
+
+**Criterion 4 — fit card names the selected item: MISSED (3/5).** Three tries
+produced fit cards that identified the selected listing, while two tries
+crashed when the model service returned `503 UNAVAILABLE`. The failure was in
+the model-backed `create_fit_card` path, so no caption was available to check
+on those attempts.
+
+**Criterion 5 — fit card has complete sentences: MISSED (4/5).** Four tries
+returned fit cards containing at least two complete sentences. One try failed
+before producing a card because the model service was unavailable. This was a
+model-output availability failure, not a sentence-count failure in a returned
+caption.
 
 ---
 
