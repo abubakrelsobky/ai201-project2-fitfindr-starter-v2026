@@ -169,35 +169,40 @@ def run_agent(query: str, wardrobe: dict) -> dict:
 
         session["selected_item"] = session["search_results"][0]
 
-        session["outfit_suggestion"] = suggest_outfit(
-            session["selected_item"],
-            session["wardrobe"],
-        )
+        try:
+            session["outfit_suggestion"] = suggest_outfit(
+                session["selected_item"],
+                session["wardrobe"],
+            )
 
-        trace.step(
-            "suggest_outfit",
-            inputs={
-                "new_item": session["selected_item"],
-                "wardrobe": session["wardrobe"],
-            },
-            returned=session["outfit_suggestion"],
-        )
+            trace.step(
+                "suggest_outfit",
+                inputs={
+                    "new_item": session["selected_item"],
+                    "wardrobe": session["wardrobe"],
+                },
+                returned=session["outfit_suggestion"],
+            )
 
-        session["fit_card"] = create_fit_card(
-            session["outfit_suggestion"],
-            session["selected_item"],
-        )
+            session["fit_card"] = create_fit_card(
+                session["outfit_suggestion"],
+                session["selected_item"],
+            )
 
-        trace.step(
-            "create_fit_card",
-            inputs={
-                "outfit": session["outfit_suggestion"],
-                "new_item": session["selected_item"],
-            },
-            returned=session["fit_card"],
-        )
+            trace.step(
+                "create_fit_card",
+                inputs={
+                    "outfit": session["outfit_suggestion"],
+                    "new_item": session["selected_item"],
+                },
+                returned=session["fit_card"],
+            )
 
-        return session
+        except ModelUnavailable as exc:
+            session["error"] = (
+                f"The model could not be reached. Please try again later. ({exc})"
+            )
+            return session
 
 
 # ── running it directly ───────────────────────────────────────────────────────

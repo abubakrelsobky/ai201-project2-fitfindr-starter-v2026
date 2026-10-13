@@ -31,6 +31,7 @@ import json
 import sys
 from pathlib import Path
 
+
 SERVER = Path(__file__).parent / "mcp_server.py"
 
 

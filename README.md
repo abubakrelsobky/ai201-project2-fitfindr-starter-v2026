@@ -187,6 +187,28 @@ I cannot create a fit card because no outfit suggestion was provided.
 - _What came back:_ The full code for run_agent().
 - _What I changed:_ Nothing! I took the time to understand the code.
 
+**Moment 3 — Unit 4**
+
+- _What I asked for:_ I asked for help moving `search_listings` from a direct
+  function call to an MCP server and client.
+- _What came back:_ The MCP registration, tool description, typed inputs, and
+  the `mcp_client.call_tool` call pattern.
+- _What I changed:_ I registered `search_listings` in `mcp_server.py`, changed
+  `agent.py::run_agent` to call it through MCP, and added trace steps so the
+  MCP call and the two model-backed tools were visible in the loop trace.
+
+**Moment 4 — Unit 4**
+
+- _What I asked for:_ I asked for help interpreting the five-try evaluation
+  results and choosing an improvement after model-service failures.
+- _What came back:_ The diagnosis that `503 UNAVAILABLE` errors came from the
+  model service, followed by a suggestion to catch `ModelUnavailable` and
+  store a user-readable error in the session.
+- _What I changed:_ I added the handler and re-ran the evaluation. The results
+  revealed that the handler stored the error but did not return from
+  `run_agent()`, so the loop repeated until `MAX_ITERATIONS` or `QuotaGuard`.
+  I documented that remaining bug instead of claiming the improvement worked.
+
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
      Don't fill these in during unit 3.
@@ -364,7 +386,7 @@ in: dict with keys: description, size, max_price
 out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey … +7 more
 [2] suggest_outfit
 in: dict with keys: new_item, wardrobe
-out: **Outfit 1: Y2K Streetwear Contrast** \* **Pieces used:** Baggy dark wash straight-leg jeans, black cropped zip…
+out: **Outfit 1: Y2K Streetwear Contrast** \* **Pieces used:** Baggy straight-leg dark wash jeans, black cropped zip…
 [3] create_fit_card
 in: dict with keys: outfit, new_item
 out: Channel your inner early 2000s pop star with this adorable white, pink, and purple butterfly print baby tee. P…
@@ -581,10 +603,7 @@ $ python app.py ask 'black jacket under $50'
 ModelUnavailable: The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.
 ```
 
-**On the MCP move:** <!-- what changed in your code, and whether anything
-behaved differently afterwards. If the rewire didn't work, say exactly where it
-broke — the error text and the last thing that worked. That earns the point in
-full. -->
+**On the MCP move:** I registered `search_listings` in `mcp_server.py` and changed `agent.py::run_agent` to call it through `mcp_client.call_tool` instead of calling the function directly. The tool still returned the same listing dictionaries, and the trace showed `search_listings (via MCP)` before the other tool calls; the user-visible behavior did not otherwise change.
 
 ---
 
@@ -596,20 +615,27 @@ full. -->
      `python run_eval.py --label after` -->
 
 **What I changed:**
+I added a ModelUnavailable handler in agent.py::run_agent. Previously, a temporary model-service 503 caused the scenario to crash. Now the agent stores a user-readable error in session["error"] and stops cleanly. This improves the model-unavailable failure mode, although it cannot make an unavailable external model complete the fit card.
 
 **Which failure it was meant to fix:**
 
+When the model crashes, instead of printing the crash/error message, it handles it and print a suitable error message.
+
 ### Run Log — After
 
-| Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
-| --------- | ------ | ----- | ----- | ----- | ----- | ----- | ------- |
-| 1.        |        |       |       |       |       |       |         |
-| 2.        |        |       |       |       |       |       |         |
-| 3.        |        |       |       |       |       |       |         |
-| 4.        |        |       |       |       |       |       |         |
-| 5.        |        |       |       |       |       |       |         |
+| Criterion                                           | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict      |
+| --------------------------------------------------- | ------ | ----- | ----- | ----- | ----- | ----- | ------------ |
+| 1. Matching query completes all three tools         | 4/5    | FAIL  | FAIL  | FAIL  | FAIL  | FAIL  | MISSED (0/5) |
+| 2. Impossible query stops before the second tool    | 5/5    | PASS  | PASS  | PASS  | PASS  | PASS  | MET (5/5)    |
+| 3. Selected item reaches `suggest_outfit` unchanged | 5/5    | FAIL  | FAIL  | FAIL  | PASS  | FAIL  | MISSED (1/5) |
+| 4. Fit card names selected item                     | 5/5    | FAIL  | FAIL  | FAIL  | FAIL  | FAIL  | MISSED (0/5) |
+| 5. Fit card has at least two complete sentences     | 5/5    | FAIL  | FAIL  | FAIL  | FAIL  | FAIL  | MISSED (0/5) |
 
 **Did it help, and how do I know:**
+
+No. The handler successfully stored a readable model-unavailable message in `session["error"]` once, but `run_agent()` did not return after handling the error. It continued around the loop, repeated the tool calls, and eventually
+crashed with `MAX_ITERATIONS` or `QuotaGuard`. The After run therefore got worse: criterion 1 fell to 0/5, criterion 3 fell to 1/5, and criteria 4 and 5 fell to 0/5. The next fix should return the session immediately after setting
+`session["error"]`.
 
 <!-- If it made things worse, say that. Honestly reported, that earns full
      credit and is more interesting than one that worked. -->
@@ -621,6 +647,9 @@ full. -->
 <!-- For each criterion still missed: what you'd do, and why you stopped where
      you did. "I ran out of time" is fine if it's true. Pretending nothing is
      left is not. -->
+
+The model-unavailable handler still needs to return the session immediately after setting `session["error"]`. Without that return, `run_agent()` continues the `while` loop and repeats the search and model calls until it reaches `MAX_ITERATIONS` or `QuotaGuard`. This caused the After run to crash instead of stopping cleanly, so criteria 1, 3, 4, and 5 remain missed. The empty-search
+branch is still working, as shown by criterion 2 meeting its target in 5/5 tries. The next fix is to add `return session` inside the `exceptModelUnavailable` block, then run the After evaluation again.
 
 <!-- ═════════════════════════════════════════════════════════════════════
 
